@@ -66,36 +66,48 @@ func (w *WeatherDB) GetCityList() ([]models.City, error) {
 	return result, nil
 }
 
-func (w *WeatherDB) GetForecast() {
-	res, err := w.DB.Query("select * from cities;")
+func (w *WeatherDB) GetForecast(id int) (*models.ShortForecast, error) {
+	var data []byte
+	err := w.DB.QueryRow("select misc from forecast where cityId=$1;", id).Scan(&data)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil, err
 	}
-	var id, name, con, lon, lat string
-	for res.Next() {
-		res.Scan(&id, &name, &con, &lon, &lat)
-		resp := GetWeather(lon, lat)
-		rawData, err := json.Marshal(resp)
-		temp := getDayTemp(resp)
-		res, err := w.DB.Query("select cityId, date from forecast where cityId=$1;", id)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		if res.Next() == true {
-			_, err = w.DB.Exec("UPDATE forecast SET temp=$1, date=$2, misc=$3 where cityId=$4;",
-				temp, resp.List[0].DtTxt, rawData, id)
+	var forecast models.Response
+	if err = json.Unmarshal(data, &forecast); err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	response := &models.ShortForecast{
+		Country:   forecast.City.Country,
+		City:      forecast.City.Name,
+		AvgTemp:   getAvgTemp(forecast),
+		DatesList: getDatesList(forecast),
+	}
+	return response, nil
+}
+func getAvgTemp(forecast models.Response) float64 {
+	sum := 0.0
+	for _, v := range forecast.List {
+		sum += v.Main.Temp
+	}
+	length := float64(len(forecast.List))
+	return sum / length
+}
 
-		} else {
-			_, err = w.DB.Exec("INSERT INTO forecast VALUES ($1, $2, $3, $4);",
-				id, temp, resp.List[0].DtTxt, rawData)
+func getDatesList(forecast models.Response) []string {
+	list := make([]string, 0, 6)
+	var prev string
+	for _, v := range forecast.List {
+		t := time.Unix(int64(v.Dt), 0)
+		date := t.Format("02-01-2006")
+
+		if date != prev {
+			list = append(list, date)
 		}
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		prev = date
 	}
+	return list
 }
 
 func getDayTemp(resp models.Response) float64 {
@@ -123,6 +135,30 @@ func GetWeather(lon, lat string) models.Response {
 	}
 	return data
 }
-func (w *WeatherDB) SaveForecast() {
 
+func (w *WeatherDB) GetDetailedForecast(id int, date time.Time) (*models.Details, error) {
+	var data []byte
+	err := w.DB.QueryRow("select misc from forecast where cityId=$1;", id).Scan(&data)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	var forecast models.Response
+	if err = json.Unmarshal(data, &forecast); err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	var resp models.Details
+	for i := 1; i < len(forecast.List); i++ {
+		curr := forecast.List[i-1].Dt
+		next := forecast.List[i].Dt
+		if date.Unix() >= curr && date.Unix() < next {
+			resp = forecast.List[i-1]
+			break
+		} else if date.Unix() == next {
+			resp = forecast.List[i]
+			break
+		}
+	}
+	return &resp, nil
 }
