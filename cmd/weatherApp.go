@@ -1,60 +1,65 @@
 package main
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"sync"
-	"weatherApp/models"
+	"strings"
+	"time"
 	"weatherApp/pkg"
+	"weatherApp/pkg/handlers"
+	"weatherApp/pkg/repository"
+	"weatherApp/pkg/services"
 )
 
-func getCity(city string, apikey string, sw *sync.WaitGroup, dest *models.City) {
-	response, err := http.Get(fmt.Sprintf("https://api.openweathermap.org/geo/1.0/direct?q=%s&limit=1&appid=%s", city, apikey))
+func logs(handler http.HandlerFunc) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		defer handler(w, r)
+		body, err := ioutil.ReadAll(r.Body)
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		data := strings.Builder{}
+		data.WriteString(fmt.Sprintf("Request time: %s\nMethod: %s\n", time.Now(), "GET"))
+		data.WriteString("\nHeader: \n")
+		for k, v := range r.Header {
+			data.WriteString(fmt.Sprintf("%s : ", k))
+			for _, s := range v {
+				data.WriteString(fmt.Sprintf("%s", s))
+			}
+			data.WriteString("\n")
+		}
+		data.WriteString("\nQuery params : \n")
+		err = r.ParseForm()
+		if err == nil {
+			for k, v := range r.Form {
+				data.WriteString(fmt.Sprintf("%s : ", k))
+				for _, s := range v {
+					data.WriteString(fmt.Sprintf("%s", s))
+				}
+				data.WriteString("\n")
+			}
+		} else {
+			data.WriteString(err.Error() + "\n")
+		}
+		data.WriteString(fmt.Sprintf("Body:\n%s\n", string(body)))
+		//l.W.Write([]byte(data.String()))
 	}
-	defer response.Body.Close()
-
-	responseData, err := io.ReadAll(response.Body)
-	var data []models.City
-	err = json.Unmarshal(responseData, &data)
-	if err != nil {
-		log.Fatal(err)
-	}
-	sw.Done()
-	*dest = data[0]
-}
-
-func initdb() {
-
 }
 
 func main() {
-	//start := time.Now()
 	config := pkg.NewConfig()
-	w := pkg.WeatherDB{}
-	w.Connection(config.DBConfig)
-	server := new(pkg.Server)
-
-	if err := server.Start(config, &w); err != nil {
+	db, err := repository.NewDatabase(config.DBConfig)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	var cities []models.City
-	//sw := &sync.WaitGroup{}
-	var city models.City
-	for _, v := range config.Cities {
-		//sw.Add(1)
-		getCity(v, config.ApiKey, &sync.WaitGroup{}, &city) // multithread
-		cities = append(cities, city)
+	serv := service.NewService(db, config)
+	handler := handlers.NewHandler(*serv)
+
+	server := &pkg.Server{}
+	if err := server.Start(config, handler.InitRouter()); err != nil {
+		log.Fatal(err)
 	}
-	//sw.Wait()
-	//w.SaveCities(cities)
-	//w.GetForecast()
 }
