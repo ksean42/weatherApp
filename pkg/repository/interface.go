@@ -2,13 +2,13 @@ package repository
 
 import (
 	"time"
-	"weatherApp/models"
+	"weatherApp/pkg/entities"
 )
 
 type Repository interface {
-	SaveCities(cities []models.City) error
-	SaveForecast(response models.Response, id int, dayTemp float64) error
-	GetShortForecast(id int) (*models.ShortForecast, error)
-	GetDetailedForecast(id int, date time.Time) (*models.Details, error)
-	GetCityList() ([]models.City, error)
+	SaveCities(cities []entities.City) error
+	SaveForecast(response entities.Forecast, id int, dayTemp float64) error
+	GetShortForecast(id int) (*entities.ShortForecast, error)
+	GetDetailedForecast(id int, date time.Time) (*entities.Details, error)
+	GetCityList() ([]entities.City, error)
 }

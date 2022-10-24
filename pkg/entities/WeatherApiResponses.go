@@ -1,10 +1,10 @@
-package models
+package entities
 
-type Response struct {
-	Cod     string    `json:"cod"`
-	Message int       `json:"message"`
-	Cnt     int       `json:"cnt"`
-	List    []Details `json:"list"`
+type Forecast struct {
+	Cod     string `json:"cod"`
+	Message int    `json:"message"`
+	Cnt     int    `json:"cnt"`
+	List    []List `json:"list"`
 	City    struct {
 		ID    int    `json:"id"`
 		Name  string `json:"name"`
@@ -20,7 +20,7 @@ type Response struct {
 	} `json:"city"`
 }
 
-type Details struct {
+type List struct {
 	Dt   int64 `json:"dt"`
 	Main struct {
 		Temp      float64 `json:"temp"`
@@ -92,11 +92,4 @@ type City struct {
 	Lat     float64 `json:"lat"`
 	Lon     float64 `json:"lon"`
 	Country string  `json:"country"`
-}
-
-type ShortForecast struct {
-	Country   string   `json:"country"`
-	City      string   `json:"city"`
-	AvgTemp   float64  `json:"avg_temp"`
-	DatesList []string `json:"list_of_dates"`
 }

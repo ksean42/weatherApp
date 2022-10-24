@@ -30,11 +30,11 @@ func NewConfig() *Config {
 		log.Fatal(err)
 		return nil
 	}
-	config.Cities = ReadCities()
+	config.Cities = readCities()
 	return config
 }
 
-func ReadCities() []string {
+func readCities() []string {
 	file, err := os.Open("configs/city_list")
 	if err != nil {
 		log.Fatal(err)

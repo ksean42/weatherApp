@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS cities (
 );
 
 CREATE TABLE IF NOT EXISTS forecast (
-    cityId INTEGER NOT NULL unique ,
+    city_id INTEGER NOT NULL unique ,
     temp DOUBLE PRECISION NOT NULL,
     date DATE NOT NULL,
     misc JSONB NOT NULL

@@ -2,10 +2,10 @@ package repository
 
 import (
 	"time"
-	"weatherApp/models"
+	"weatherApp/pkg/entities"
 )
 
-func getDatesList(forecast models.Response) []string {
+func getDatesList(forecast entities.Forecast) []string {
 	list := make([]string, 0, 6)
 	var prev string
 	for _, v := range forecast.List {
@@ -20,7 +20,7 @@ func getDatesList(forecast models.Response) []string {
 	return list
 }
 
-func getAvgTemp(forecast models.Response) float64 {
+func getAvgTemp(forecast entities.Forecast) float64 {
 	sum := 0.0
 	for _, v := range forecast.List {
 		sum += v.Main.Temp
