@@ -17,21 +17,15 @@ type DBConfig struct {
 }
 
 type Config struct {
-	ApiKey   string `toml:"apiKey"`
-	Port     string `toml:"port"`
-	DBConfig *DBConfig
-	Cities   []string
+	ApiKey string `toml:"apiKey"`
+	Port   string `toml:"port"`
+	*DBConfig
+	Cities []string
 }
 
 func NewConfig() *Config {
 	config := &Config{}
-	_, err := toml.DecodeFile("config/config.toml", config)
-	if err != nil {
-		log.Fatal(err)
-		return nil
-	}
-
-	_, err = toml.DecodeFile("config/config.toml", &config.DBConfig)
+	_, err := toml.DecodeFile("configs/config.toml", config)
 	if err != nil {
 		log.Fatal(err)
 		return nil
@@ -41,7 +35,7 @@ func NewConfig() *Config {
 }
 
 func ReadCities() []string {
-	file, err := os.Open("config/cities")
+	file, err := os.Open("configs/city_list")
 	if err != nil {
 		log.Fatal(err)
 	}

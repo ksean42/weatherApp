@@ -49,14 +49,15 @@ func logs(handler http.HandlerFunc) func(http.ResponseWriter, *http.Request) {
 }
 
 func main() {
+	s := time.Now()
 	config := pkg.NewConfig()
 	db, err := repository.NewDatabase(config.DBConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	serv := service.NewService(db, config)
 	handler := handlers.NewHandler(*serv)
+	fmt.Println(time.Until(s))
 
 	server := &pkg.Server{}
 	if err := server.Start(config, handler.InitRouter()); err != nil {

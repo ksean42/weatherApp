@@ -8,7 +8,7 @@ import (
 )
 
 // date format: 2022-10-22 11:00:01
-// /full?id=2&time=2022-10-22 18:00:00
+// /forecast/details?id=2&time=2022-10-22 18:00:00
 func (h *Handler) getDetailedForecast(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -32,6 +32,7 @@ func (h *Handler) getDetailedForecast(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Something went wrong"))
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
@@ -43,7 +44,7 @@ func (h *Handler) getShortForecast(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	args := r.URL.Query()
-	w.Header().Set("Content-Type", "application/json")
+
 	id, err := strconv.Atoi(args.Get("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -63,6 +64,7 @@ func (h *Handler) getShortForecast(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Something went wrong"))
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
