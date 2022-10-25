@@ -1,12 +1,14 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 	"weatherApp/pkg"
 	"weatherApp/pkg/entities"
@@ -15,42 +17,63 @@ import (
 
 type Forecast interface {
 	SaveCities(cities []entities.City) error
-	SaveForecast(response entities.Forecast, id int, dayTemp float64) error
+	SaveForecast(response entities.Forecast, dayTemp float64) error
 	GetShortForecast(id int) (*entities.ShortForecast, error)
 	GetDetailedForecast(id int, date time.Time) (*entities.Details, error)
-	GetCityList() ([]entities.City, error)
+	GetCityList() ([]entities.CityResponse, error)
 }
 
 type Service struct {
 	Forecast
 }
 
-func NewService(repo repository.Repository, config *pkg.Config) *Service {
+func NewService(repo repository.Repository, config *pkg.Config, ctx context.Context) *Service {
 	service := &Service{
 		NewForecastService(repo),
 	}
-	service.getApiInfo(config)
+	service.getApiInfo(config, ctx)
 
 	return service
 }
 
-func (s *Service) getApiInfo(config *pkg.Config) {
+func (s *Service) getApiInfo(config *pkg.Config, ctx context.Context) {
 	var cities []entities.City
-	var forecasts []entities.Forecast
-	var forecast entities.Forecast
 	var city entities.City
-	for _, v := range config.Cities {
-		getCity(v, config.ApiKey, &city) // multithread
-		cities = append(cities, city)
-	}
-	for _, v := range cities {
-		forecast = getWeather(v.Lon, v.Lat)
-		forecasts = append(forecasts, forecast)
-	}
-	s.SaveCities(cities)
+	mutex := &sync.Mutex{}
+	wg := &sync.WaitGroup{}
+	st := time.Now()
 
-	for i, v := range forecasts {
-		s.SaveForecast(v, i+1, getDayTemp(v)) // handle error
+	for i, v := range config.Cities {
+		wg.Add(1)
+		go func(id int, v string) {
+			getCity(v, config.ApiKey, &city)
+			city.Id = id + 1
+			mutex.Lock()
+			cities = append(cities, city)
+			mutex.Unlock()
+			wg.Done()
+		}(i, v)
+	}
+	wg.Wait()
+	fmt.Println("city: ", time.Until(st))
+	for _, v := range cities {
+		fmt.Println(v.Id)
+	}
+	go func() {
+		for {
+			s.SaveWeather(cities, config)
+			fmt.Println("Forecasts updated")
+			<-time.After(1 * time.Minute)
+		}
+	}()
+	s.SaveCities(cities)
+}
+
+func (s *Service) handleForecasts(forecasts []entities.Forecast) {
+	for _, v := range forecasts {
+		if s.SaveForecast(v, getDayTemp(v)) != nil {
+			continue
+		}
 	}
 }
 
@@ -79,8 +102,30 @@ func getDayTemp(resp entities.Forecast) float64 {
 	}
 	return resp.List[0].Main.Temp
 }
-func getWeather(lon, lat float64) entities.Forecast {
-	url := fmt.Sprintf("https://api.openweathermap.org/data/2.5/forecast?units=metric&lat=%f&lon=%f&appid=0eee4a21ef9a8817b2663009a78009fa", lat, lon)
+
+func (s *Service) SaveWeather(cities []entities.City, config *pkg.Config) {
+	var forecasts []entities.Forecast
+	var forecast entities.Forecast
+	mutex := &sync.Mutex{}
+	wg := &sync.WaitGroup{}
+	for _, v := range cities {
+		wg.Add(1)
+		go func(v entities.City) {
+			getWeather(&v, &forecast, config.ApiKey)
+			forecast.CityId = v.Id
+			mutex.Lock()
+			forecasts = append(forecasts, forecast)
+			mutex.Unlock()
+			wg.Done()
+		}(v)
+	}
+	wg.Wait()
+	s.handleForecasts(forecasts)
+}
+
+func getWeather(city *entities.City, dest *entities.Forecast, apikey string) {
+	url := fmt.Sprintf("https://api.openweathermap.org/data/2.5/forecast?units=metric&lat=%f&lon=%f&appid=%s",
+		city.Lat, city.Lon, apikey)
 	response, err := http.Get(url)
 	if err != nil {
 		fmt.Print(err.Error())
@@ -94,5 +139,6 @@ func getWeather(lon, lat float64) entities.Forecast {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return data
+	data.CityId = city.Id
+	*dest = data
 }

@@ -14,7 +14,7 @@ type WeatherDB struct {
 	DB *sqlx.DB
 }
 
-func NewDatabase(config *pkg.DBConfig) (*WeatherDB, error) {
+func NewWeatherDB(config *pkg.DBConfig) (*WeatherDB, error) {
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.Host, config.Port, config.User, config.Password, config.Name)
 	db, err := sqlx.Open("postgres", connStr)
@@ -30,8 +30,8 @@ func NewDatabase(config *pkg.DBConfig) (*WeatherDB, error) {
 
 func (w *WeatherDB) SaveCities(cities []entities.City) error {
 	for _, v := range cities {
-		_, err := w.DB.Exec("INSERT INTO cities(name, country, longitude, latitude) VALUES ($1, $2, $3,$4);",
-			v.Name, v.Country, v.Lon, v.Lat)
+		_, err := w.DB.Exec("INSERT INTO cities(city_id, name, country, longitude, latitude) VALUES ($1, $2, $3,$4, $5);",
+			v.Id, v.Name, v.Country, v.Lon, v.Lat)
 		if err != nil {
 			return err
 		}
@@ -39,21 +39,21 @@ func (w *WeatherDB) SaveCities(cities []entities.City) error {
 	return nil
 }
 
-func (w *WeatherDB) SaveForecast(forecast entities.Forecast, id int, dayTemp float64) error {
+func (w *WeatherDB) SaveForecast(forecast entities.Forecast, dayTemp float64) error {
 	data, err := json.Marshal(forecast)
 	if err != nil {
 		return err
 	}
 	_, err = w.DB.Exec("INSERT INTO forecast VALUES ($1, $2, $3, $4)",
-		id, dayTemp, forecast.List[0].DtTxt, data)
+		forecast.CityId, dayTemp, forecast.List[0].DtTxt, data)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *WeatherDB) GetCityList() ([]entities.City, error) {
-	var result []entities.City
+func (w *WeatherDB) GetCityList() ([]entities.CityResponse, error) {
+	var result []entities.CityResponse
 
 	res, err := w.DB.Query("select * from cities order by name asc;")
 	if err != nil {
@@ -61,7 +61,7 @@ func (w *WeatherDB) GetCityList() ([]entities.City, error) {
 	}
 	defer res.Close()
 	for res.Next() {
-		var city entities.City
+		var city entities.CityResponse
 		err := res.Scan(&city.Id, &city.Name, &city.Country, &city.Lon, &city.Lat)
 		if err != nil {
 			return nil, err
@@ -79,7 +79,7 @@ func (w *WeatherDB) GetShortForecast(id int) (*entities.ShortForecast, error) {
 		return nil, err
 	}
 	var cityName string
-	err = w.DB.QueryRow("select name from cities where id=$1;", id).Scan(&cityName)
+	err = w.DB.QueryRow("select name from cities where city_id=$1;", id).Scan(&cityName)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -106,7 +106,7 @@ func (w *WeatherDB) GetDetailedForecast(id int, date time.Time) (*entities.Detai
 		return nil, err
 	}
 	var cityName string
-	err = w.DB.QueryRow("select name from cities where id=$1;", id).Scan(&cityName)
+	err = w.DB.QueryRow("select name from cities where city_id=$1;", id).Scan(&cityName)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err

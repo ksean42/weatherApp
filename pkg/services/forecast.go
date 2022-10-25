@@ -24,10 +24,10 @@ func (f *ForecastService) GetShortForecast(id int) (*entities.ShortForecast, err
 func (f *ForecastService) GetDetailedForecast(id int, date time.Time) (*entities.Details, error) {
 	return f.weatherDB.GetDetailedForecast(id, date)
 }
-func (f *ForecastService) GetCityList() ([]entities.City, error) {
+func (f *ForecastService) GetCityList() ([]entities.CityResponse, error) {
 	return f.weatherDB.GetCityList()
 }
 
-func (f *ForecastService) SaveForecast(response entities.Forecast, id int, dayTemp float64) error {
-	return f.weatherDB.SaveForecast(response, id, dayTemp)
+func (f *ForecastService) SaveForecast(response entities.Forecast, dayTemp float64) error {
+	return f.weatherDB.SaveForecast(response, dayTemp)
 }

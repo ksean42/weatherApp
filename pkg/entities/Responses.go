@@ -12,3 +12,11 @@ type ShortForecast struct {
 	AvgTemp   float64  `json:"avg_temp"`
 	DatesList []string `json:"list_of_dates"`
 }
+
+type CityResponse struct {
+	Id      int     `json:"city_id"`
+	Name    string  `json:"name"`
+	Country string  `json:"country"`
+	Lon     float64 `json:"longitude"`
+	Lat     float64 `json:"latitude"`
+}

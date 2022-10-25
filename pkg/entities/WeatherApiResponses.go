@@ -1,6 +1,7 @@
 package entities
 
 type Forecast struct {
+	CityId  int    `json:"city_id"`
 	Cod     string `json:"cod"`
 	Message int    `json:"message"`
 	Cnt     int    `json:"cnt"`

@@ -2,11 +2,15 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 	"weatherApp/pkg"
 	"weatherApp/pkg/handlers"
@@ -50,17 +54,36 @@ func logs(handler http.HandlerFunc) func(http.ResponseWriter, *http.Request) {
 
 func main() {
 	s := time.Now()
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	exit := make(chan os.Signal, 1)
+	signal.Notify(exit, syscall.SIGTERM, syscall.SIGINT)
+
 	config := pkg.NewConfig()
-	db, err := repository.NewDatabase(config.DBConfig)
+	db, err := repository.NewWeatherDB(config.DBConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	serv := service.NewService(db, config)
+
+	serv := service.NewService(db, config, ctx)
 	handler := handlers.NewHandler(*serv)
 	fmt.Println(time.Until(s))
 
 	server := &pkg.Server{}
+	go gracefulShutdown(ctx, cancel, server, exit)
 	if err := server.Start(config, handler.InitRouter()); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func gracefulShutdown(ctx context.Context, cancel context.CancelFunc,
+	server *pkg.Server, exit chan os.Signal) {
+	<-exit
+	if err := server.Stop(ctx); err != nil {
+		log.Println(err)
+	}
+	cancel()
+	log.Println("Server shouting down...")
+
 }
