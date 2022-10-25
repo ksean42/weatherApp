@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// date format: 2022-10-22 11:00:01
+// date format: 2022-10-22 11:00
 // /forecast/details?id=2&time=2022-10-22 18:00:00
 func (h *Handler) getDetailedForecast(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -18,7 +18,7 @@ func (h *Handler) getDetailedForecast(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	args := r.URL.Query()
 	res := args.Get("time")
-	t, err := time.Parse("2006-01-02 15:04:05", res)
+	t, err := time.Parse("2006-01-02 15:04", res)
 	id, err := strconv.Atoi(args.Get("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)

@@ -1,7 +1,8 @@
 package entities
 
+//Forecast - response with forecast from weather api
 type Forecast struct {
-	CityId  int    `json:"city_id"`
+	CityID  int    `json:"city_id"`
 	Cod     string `json:"cod"`
 	Message int    `json:"message"`
 	Cnt     int    `json:"cnt"`
@@ -21,6 +22,7 @@ type Forecast struct {
 	} `json:"city"`
 }
 
+//List part of forecast weather api response
 type List struct {
 	Dt   int64 `json:"dt"`
 	Main struct {
@@ -59,8 +61,9 @@ type List struct {
 	} `json:"rain,omitempty"`
 }
 
+//City - response with city list from weather api
 type City struct {
-	Id         int    `json:"id"`
+	ID         int    `json:"id"`
 	Name       string `json:"name"`
 	LocalNames struct {
 		Ar          string `json:"ar"`

@@ -66,12 +66,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	serv := service.NewService(db, config, ctx)
+	serv := service.NewService(ctx, db, config)
 	handler := handlers.NewHandler(*serv)
 	fmt.Println(time.Until(s))
 
 	server := &pkg.Server{}
 	go gracefulShutdown(ctx, cancel, server, exit)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				fmt.Println("adsadsnkjdzfgahrgaehrf")
+				return
+			}
+		}
+	}()
 	if err := server.Start(config, handler.InitRouter()); err != nil {
 		log.Fatal(err)
 	}
@@ -80,10 +89,9 @@ func main() {
 func gracefulShutdown(ctx context.Context, cancel context.CancelFunc,
 	server *pkg.Server, exit chan os.Signal) {
 	<-exit
+	log.Println("Server shutting down...")
 	if err := server.Stop(ctx); err != nil {
 		log.Println(err)
 	}
 	cancel()
-	log.Println("Server shouting down...")
-
 }

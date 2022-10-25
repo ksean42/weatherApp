@@ -8,6 +8,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// DBConfig is config for database
 type DBConfig struct {
 	Host     string `toml:"db_host"`
 	Port     string `toml:"db_port"`
@@ -16,13 +17,15 @@ type DBConfig struct {
 	Name     string `toml:"db_name"`
 }
 
+// Config is main config structure which includes database config
 type Config struct {
-	ApiKey string `toml:"apiKey"`
+	APIKey string `toml:"apiKey"`
 	Port   string `toml:"port"`
 	*DBConfig
 	Cities []string
 }
 
+// NewConfig is config reader and constructor
 func NewConfig() *Config {
 	config := &Config{}
 	_, err := toml.DecodeFile("configs/config.toml", config)

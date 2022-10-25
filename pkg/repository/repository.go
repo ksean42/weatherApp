@@ -31,7 +31,7 @@ func NewWeatherDB(config *pkg.DBConfig) (*WeatherDB, error) {
 func (w *WeatherDB) SaveCities(cities []entities.City) error {
 	for _, v := range cities {
 		_, err := w.DB.Exec("INSERT INTO cities(city_id, name, country, longitude, latitude) VALUES ($1, $2, $3,$4, $5);",
-			v.Id, v.Name, v.Country, v.Lon, v.Lat)
+			v.ID, v.Name, v.Country, v.Lon, v.Lat)
 		if err != nil {
 			return err
 		}
@@ -44,12 +44,19 @@ func (w *WeatherDB) SaveForecast(forecast entities.Forecast, dayTemp float64) er
 	if err != nil {
 		return err
 	}
-	_, err = w.DB.Exec("INSERT INTO forecast VALUES ($1, $2, $3, $4)",
-		forecast.CityId, dayTemp, forecast.List[0].DtTxt, data)
+	var exist bool
+	err = w.DB.QueryRow("SELECT exists(SELECT * from forecast where city_id=$1)", forecast.CityID).Scan(&exist)
 	if err != nil {
 		return err
 	}
-	return nil
+	if exist {
+		_, err = w.DB.Exec("UPDATE forecast SET temp=$1, date=$2, misc = $3  WHERE city_id = $4;",
+			dayTemp, forecast.List[0].DtTxt, data, forecast.CityID)
+	} else {
+		_, err = w.DB.Exec("INSERT INTO forecast VALUES ($1, $2, $3, $4)",
+			forecast.CityID, dayTemp, forecast.List[0].DtTxt, data)
+	}
+	return err
 }
 
 func (w *WeatherDB) GetCityList() ([]entities.CityResponse, error) {
@@ -62,7 +69,7 @@ func (w *WeatherDB) GetCityList() ([]entities.CityResponse, error) {
 	defer res.Close()
 	for res.Next() {
 		var city entities.CityResponse
-		err := res.Scan(&city.Id, &city.Name, &city.Country, &city.Lon, &city.Lat)
+		err := res.Scan(&city.ID, &city.Name, &city.Country, &city.Lon, &city.Lat)
 		if err != nil {
 			return nil, err
 		}
@@ -129,6 +136,6 @@ func (w *WeatherDB) GetDetailedForecast(id int, date time.Time) (*entities.Detai
 		}
 	}
 	resp.City = cityName
-	resp.CityId = id
+	resp.CityID = id
 	return &resp, nil
 }

@@ -5,15 +5,17 @@ import (
 	service "weatherApp/pkg/services"
 )
 
+//Handler struct
 type Handler struct {
 	serv service.Service
 }
 
+//NewHandler - server constructor
 func NewHandler(serv service.Service) *Handler {
 	return &Handler{serv}
 }
 
-// api groups
+// InitRouter initialize and return router
 func (h *Handler) InitRouter() *http.ServeMux {
 	router := http.NewServeMux()
 	router.HandleFunc("/cities", h.getCityList)
