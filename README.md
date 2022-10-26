@@ -6,6 +6,8 @@
 docker-compose up
 ```
 
+Server is running at localhost:8071
+
 **API:**
 ```
 GET /cities  - list of available cities
