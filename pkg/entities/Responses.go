@@ -4,7 +4,7 @@ package entities
 type Details struct {
 	CityID  int    `json:"city_id"`
 	City    string `json:"city"`
-	Details List   `json:"list"`
+	Details List   `json:"details"`
 }
 
 // ShortForecast is short forecast response entity
