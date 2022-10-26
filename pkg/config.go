@@ -21,8 +21,8 @@ type DBConfig struct {
 type Config struct {
 	APIKey string `toml:"apiKey"`
 	Port   string `toml:"port"`
-	*DBConfig
 	Cities []string
+	*DBConfig
 }
 
 // NewConfig is config reader and constructor

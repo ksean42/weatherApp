@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"log"
 	"time"
 	"weatherApp/pkg"
 	"weatherApp/pkg/entities"
@@ -64,6 +65,7 @@ func (w *WeatherDB) GetCityList() ([]entities.CityResponse, error) {
 
 	res, err := w.DB.Query("select * from cities order by name asc;")
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	defer res.Close()
@@ -82,18 +84,18 @@ func (w *WeatherDB) GetShortForecast(id int) (*entities.ShortForecast, error) {
 	var data []byte
 	err := w.DB.QueryRow("select misc from forecast where city_id=$1;", id).Scan(&data)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 	var cityName string
 	err = w.DB.QueryRow("select name from cities where city_id=$1;", id).Scan(&cityName)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 	var forecast entities.Forecast
 	if err = json.Unmarshal(data, &forecast); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 	response := &entities.ShortForecast{
@@ -109,18 +111,18 @@ func (w *WeatherDB) GetDetailedForecast(id int, date time.Time) (*entities.Detai
 	var data []byte
 	err := w.DB.QueryRow("select misc from forecast where city_id=$1;", id).Scan(&data)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 	var cityName string
 	err = w.DB.QueryRow("select name from cities where city_id=$1;", id).Scan(&cityName)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 	var forecast entities.Forecast
 	if err = json.Unmarshal(data, &forecast); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 	var resp entities.Details

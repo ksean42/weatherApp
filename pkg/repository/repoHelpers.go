@@ -9,7 +9,7 @@ func getDatesList(forecast entities.Forecast) []string {
 	list := make([]string, 0, 6)
 	var prev string
 	for _, v := range forecast.List {
-		t := time.Unix(int64(v.Dt), 0)
+		t := time.Unix(v.Dt, 0)
 		date := t.Format("02-01-2006")
 
 		if date != prev {

@@ -23,3 +23,7 @@ type CityResponse struct {
 	Lon     float64 `json:"longitude"`
 	Lat     float64 `json:"latitude"`
 }
+
+type Error struct {
+	Error string `json:"Error"`
+}

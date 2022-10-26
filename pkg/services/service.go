@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 	"weatherApp/pkg"
@@ -37,6 +36,12 @@ func NewService(ctx context.Context, repo repository.Repository, config *pkg.Con
 }
 
 func (s *Service) getAPIInfo(ctx context.Context, config *pkg.Config) {
+	cities := getCityList(config)
+	go s.backgroundUpdate(ctx, cities, config)
+	s.SaveCities(cities)
+}
+
+func getCityList(config *pkg.Config) []entities.City {
 	var cities []entities.City
 	var city entities.City
 	mutex := &sync.Mutex{}
@@ -54,8 +59,7 @@ func (s *Service) getAPIInfo(ctx context.Context, config *pkg.Config) {
 		}(i, v)
 	}
 	wg.Wait()
-	go s.backgroundUpdate(ctx, cities, config)
-	s.SaveCities(cities)
+	return cities
 }
 
 func (s *Service) backgroundUpdate(ctx context.Context, cities []entities.City, config *pkg.Config) {
@@ -67,7 +71,7 @@ func (s *Service) backgroundUpdate(ctx context.Context, cities []entities.City, 
 		default:
 			s.saveWeather(cities, config)
 			log.Println("Forecasts updated")
-			time.Sleep(5 * time.Second)
+			time.Sleep(5 * time.Minute)
 		}
 	}
 }
@@ -118,8 +122,7 @@ func getForecastFromAPI(city *entities.City, dest *entities.Forecast, apikey str
 		city.Lat, city.Lon, apikey)
 	response, err := http.Get(url)
 	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	defer response.Body.Close()
 
