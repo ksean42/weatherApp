@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"log"
 	"time"
 	"weatherApp/pkg"
 	"weatherApp/pkg/entities"
@@ -28,15 +29,23 @@ func NewWeatherDB(config *pkg.DBConfig) (*WeatherDB, error) {
 	return &WeatherDB{db}, nil
 }
 
-func (w *WeatherDB) SaveCities(cities []entities.City) error {
+func (w *WeatherDB) SaveCities(cities []entities.City) {
 	for _, v := range cities {
-		_, err := w.DB.Exec("INSERT INTO cities(city_id, name, country, longitude, latitude) VALUES ($1, $2, $3,$4, $5);",
-			v.ID, v.Name, v.Country, v.Lon, v.Lat)
+		var exist bool
+		err := w.DB.QueryRow("SELECT exists(SELECT * from cities where city_id=$1)", v.ID).Scan(&exist)
 		if err != nil {
-			return err
+			log.Println(err)
+			continue
+		}
+		if !exist {
+			_, err := w.DB.Exec("INSERT INTO cities(city_id, name, country, longitude, latitude) VALUES ($1, $2, $3,$4, $5);",
+				v.ID, v.Name, v.Country, v.Lon, v.Lat)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 		}
 	}
-	return nil
 }
 
 func (w *WeatherDB) SaveForecast(forecast entities.Forecast, dayTemp float64) error {

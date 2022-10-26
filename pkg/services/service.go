@@ -15,7 +15,7 @@ import (
 )
 
 type Forecast interface {
-	SaveCities(cities []entities.City) error
+	SaveCities(cities []entities.City)
 	SaveForecast(response entities.Forecast, dayTemp float64) error
 	GetShortForecast(id int) (*entities.ShortForecast, error)
 	GetDetailedForecast(id int, date time.Time) (*entities.Details, error)
@@ -43,13 +43,13 @@ func (s *Service) getAPIInfo(ctx context.Context, config *pkg.Config) {
 
 func getCityList(config *pkg.Config) []entities.City {
 	var cities []entities.City
-	var city entities.City
 	mutex := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
 
 	for i, v := range config.Cities {
 		wg.Add(1)
 		go func(id int, v string) {
+			var city entities.City
 			getCityFromAPI(v, config.APIKey, &city)
 			city.ID = id + 1
 			mutex.Lock()

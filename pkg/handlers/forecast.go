@@ -22,6 +22,10 @@ func (h *Handler) getDetailedForecast(w http.ResponseWriter, r *http.Request) {
 	args := r.URL.Query()
 	res := args.Get("time")
 	t, err := time.Parse("2006-01-02 15:04", res)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "Bad request", err)
+		return
+	}
 	id, err := strconv.Atoi(args.Get("id"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "Bad request", err)

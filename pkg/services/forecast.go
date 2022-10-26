@@ -14,8 +14,8 @@ func NewForecastService(weatherDB repository.Repository) *ForecastService {
 	return &ForecastService{weatherDB}
 }
 
-func (f *ForecastService) SaveCities(cities []entities.City) error {
-	return f.weatherDB.SaveCities(cities)
+func (f *ForecastService) SaveCities(cities []entities.City) {
+	f.weatherDB.SaveCities(cities)
 }
 func (f *ForecastService) GetShortForecast(id int) (*entities.ShortForecast, error) {
 	return f.weatherDB.GetShortForecast(id)
