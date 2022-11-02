@@ -43,9 +43,9 @@ func main() {
 func gracefulShutdown(ctx context.Context, cancel context.CancelFunc,
 	server *pkg.Server, exit chan os.Signal) {
 	<-exit
+	cancel()
 	log.Println("Server shutting down...")
 	if err := server.Stop(ctx); err != nil {
 		log.Println(err)
 	}
-	cancel()
 }

@@ -59,19 +59,22 @@ func getCityList(config *pkg.Config) []entities.City {
 		}(i, v)
 	}
 	wg.Wait()
+
 	return cities
 }
 
 func (s *Service) backgroundUpdate(ctx context.Context, cities []entities.City, config *pkg.Config) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
+		case <-ticker.C:
+			s.saveWeather(cities, config)
+			log.Println("Forecasts updated")
 		case <-ctx.Done():
 			log.Println("Updating stopped..")
 			return
-		default:
-			s.saveWeather(cities, config)
-			log.Println("Forecasts updated")
-			time.Sleep(5 * time.Minute)
 		}
 	}
 }
@@ -103,17 +106,18 @@ func getDayTemp(resp entities.Forecast) float64 {
 }
 
 func (s *Service) saveWeather(cities []entities.City, config *pkg.Config) {
-	var forecast entities.Forecast
 	wg := &sync.WaitGroup{}
 	for _, v := range cities {
 		wg.Add(1)
 		go func(v entities.City) {
+			var forecast entities.Forecast
 			getForecastFromAPI(&v, &forecast, config.APIKey)
 			forecast.CityID = v.ID
 			s.SaveForecast(forecast, getDayTemp(forecast))
 			wg.Done()
 		}(v)
 	}
+
 	wg.Wait()
 }
 
