@@ -15,7 +15,7 @@ import (
 func (h *Handler) getDetailedForecast(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "GET" {
-		writeError(w, http.StatusInternalServerError, "Something went wrong",
+		writeError(w, http.StatusBadRequest, "Bad request method",
 			errors.New("bad request method"))
 		return
 	}
@@ -44,7 +44,7 @@ func (h *Handler) getDetailedForecast(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getShortForecast(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "GET" {
-		writeError(w, http.StatusInternalServerError, "Something went wrong",
+		writeError(w, http.StatusBadRequest, "Bad request method",
 			errors.New("bad request method"))
 		return
 	}
@@ -73,7 +73,7 @@ func (h *Handler) getShortForecast(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getCityList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != "GET" {
-		writeError(w, http.StatusInternalServerError, "Something went wrong",
+		writeError(w, http.StatusBadRequest, "Bad request method",
 			errors.New("bad request method"))
 		return
 	}

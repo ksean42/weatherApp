@@ -37,6 +37,7 @@ func NewService(ctx context.Context, repo repository.Repository, config *pkg.Con
 
 func (s *Service) getAPIInfo(ctx context.Context, config *pkg.Config) {
 	cities := getCityList(config)
+	s.saveWeather(cities, config)
 	go s.backgroundUpdate(ctx, cities, config)
 	s.SaveCities(cities)
 }
@@ -49,8 +50,7 @@ func getCityList(config *pkg.Config) []entities.City {
 	for i, v := range config.Cities {
 		wg.Add(1)
 		go func(id int, v string) {
-			var city entities.City
-			getCityFromAPI(v, config.APIKey, &city)
+			city := getCityFromAPI(v, config.APIKey)
 			city.ID = id + 1
 			mutex.Lock()
 			cities = append(cities, city)
@@ -64,7 +64,7 @@ func getCityList(config *pkg.Config) []entities.City {
 }
 
 func (s *Service) backgroundUpdate(ctx context.Context, cities []entities.City, config *pkg.Config) {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -79,7 +79,7 @@ func (s *Service) backgroundUpdate(ctx context.Context, cities []entities.City, 
 	}
 }
 
-func getCityFromAPI(city string, apikey string, dest *entities.City) {
+func getCityFromAPI(city string, apikey string) entities.City {
 	url := fmt.Sprintf("https://api.openweathermap.org/geo/1.0/direct?q=%s&limit=1&appid=%s", city, apikey)
 	response, err := http.Get(url)
 	if err != nil {
@@ -91,9 +91,9 @@ func getCityFromAPI(city string, apikey string, dest *entities.City) {
 	var data []entities.City
 	err = json.Unmarshal(responseData, &data)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err) // err handling
 	}
-	*dest = data[0]
+	return data[0]
 }
 
 func getDayTemp(resp entities.Forecast) float64 {
@@ -110,8 +110,7 @@ func (s *Service) saveWeather(cities []entities.City, config *pkg.Config) {
 	for _, v := range cities {
 		wg.Add(1)
 		go func(v entities.City) {
-			var forecast entities.Forecast
-			getForecastFromAPI(&v, &forecast, config.APIKey)
+			forecast := getForecastFromAPI(&v, config.APIKey)
 			forecast.CityID = v.ID
 			s.SaveForecast(forecast, getDayTemp(forecast))
 			wg.Done()
@@ -121,7 +120,7 @@ func (s *Service) saveWeather(cities []entities.City, config *pkg.Config) {
 	wg.Wait()
 }
 
-func getForecastFromAPI(city *entities.City, dest *entities.Forecast, apikey string) {
+func getForecastFromAPI(city *entities.City, apikey string) entities.Forecast {
 	url := fmt.Sprintf("https://api.openweathermap.org/data/2.5/forecast?units=metric&lat=%f&lon=%f&appid=%s",
 		city.Lat, city.Lon, apikey)
 	response, err := http.Get(url)
@@ -137,5 +136,5 @@ func getForecastFromAPI(city *entities.City, dest *entities.Forecast, apikey str
 		log.Fatal(err)
 	}
 	data.CityID = city.ID
-	*dest = data
+	return data
 }
